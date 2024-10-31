@@ -1,4 +1,4 @@
-# js-mdict 服务器
+# js-mdx-server
 
 > 基于 [terasum/js-mdict](https://github.com/terasum/js-mdict)
 
@@ -29,7 +29,7 @@
 1. 运行方式一：(直接运行)
 
    ```sh
-   deno run -A main.ts --dir='/Users/ming/dict-workspace/dict-files/精装牛津十' --port=4008
+   deno run -A main.ts --dir='mdx词典文件所在目录' --port=4008
    ```
 
 2. 运行方式二：(调试运行)
