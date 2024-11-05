@@ -29,7 +29,7 @@
 1. 运行方式一：(直接运行)
 
    ```sh
-   deno run -A main.ts --dir='mdx词典文件所在目录' --port=4008
+   deno run -A main.ts --dir='mdx词典文件所在目录!' --port=4000
    ```
 
 2. 运行方式二：(调试运行)
