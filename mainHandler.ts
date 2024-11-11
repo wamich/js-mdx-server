@@ -33,5 +33,6 @@ export async function mainHandler(c: Context) {
   } catch (_error) {
     // static file not exist, return index.html
   }
+
   return c.html(getIndexHtml());
 }

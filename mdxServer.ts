@@ -26,6 +26,8 @@ export class MdxServer {
   }
 
   async lookup(c: Context) {
+    if (c.req.path === "/") return c.notFound();
+
     const key = decodeURIComponent(c.req.path).slice(1);
     const mimeType = getMimeType(key);
 

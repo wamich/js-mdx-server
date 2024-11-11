@@ -2,6 +2,15 @@ import { extname, join } from "jsr:@std/path";
 
 export const FallbackMimeType = "application/octet-stream";
 
+export type MdictFileInfo = {
+  // 目录（如: 牛津高阶十）下的mdx文件名称。
+  // 如: oaldpe.mdx
+  mdx: string;
+  // 目录（如: 牛津高阶十）下的mdd文件名称，可能有多个。
+  // 如: [oaldpe.mdd, oaldpe.1.mdd, oaldpe.2.mdd, ]
+  mddArr: string[];
+};
+
 // 扫描目录
 export const scanDir = (_dir: string) => {
   let rootDir: string;
@@ -59,12 +68,3 @@ export function findMdictInfo(mdxDir: string) {
 
   return mdictInfo;
 }
-
-export type MdictFileInfo = {
-  // 目录（如: 牛津高阶十）下的mdx文件名称。
-  // 如: oaldpe.mdx
-  mdx: string;
-  // 目录（如: 牛津高阶十）下的mdd文件名称，可能有多个。
-  // 如: [oaldpe.mdd, oaldpe.1.mdd, oaldpe.2.mdd, ]
-  mddArr: string[];
-};

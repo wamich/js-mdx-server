@@ -4,7 +4,7 @@
 
 ## 支持多 mdd 文件
 
-测试词典: [牛津高阶双解第 10 版](https://forum.freemdict.com/t/topic/30466)
+推荐词典: [牛津高阶双解第 10 版](https://forum.freemdict.com/t/topic/30466)
 
 ## 前提
 
@@ -21,20 +21,48 @@
 
 ## 运行
 
-> **注意**：2 个参数
+> **命令行参数**
 
-- **--dir**: 词典 mdx 文件所在目录
-- **--port** : 服务端口号
+```sh
+deno run -A main.ts --help
+
+参数说明:
+--port: (可选)。服务运行端口，默认端口：3000
+--dir:  (必填)。请指定绝对路径！表示 mdx 文件所在目录。多个 mdx 文件时，请分别建立不同目录，此时 dir 参数应该为这些目录的上级目录。例如：
+  1. 一个 mdx 文件时，dir 参数为: 父级目录。
+    └── *父级目录*
+        └── oaldpe.mdx
+  2. 多个 mdx 文件时，dir 参数为: 祖父级目录。
+    └── *祖父级目录*
+        ├── 精选牛津十
+        │   ├── oaldpe.mdx
+        │   ├── oaldpe.mdd
+        │   ├── oaldpe1.mdd
+        │   ├── oaldpe2.mdd
+        │   ├── oaldpe3.mdd
+        │   └── oaldpe4.mdd
+        └── 21 世纪英汉词典
+            └── 21 世纪英汉词典.mdx
+```
 
 1. 运行方式一：(直接运行)
 
    ```sh
-   deno run -A main.ts --dir='mdx词典文件所在目录!' --port=4000
+   deno run -A main.ts --dir='你的目录!' --port=3000
    ```
 
 2. 运行方式二：(调试运行)
 
    - 据实修改 **deno.json** 中 **--dir 参数**、**--port 参数**。
+
+   ```json
+   {
+     "tasks": {
+       "dev": "deno run -A --watch main.ts --dir='/Users/ming/dict-workspace/dictionaries/' --port=3000"
+     }
+   }
+   ```
+
    - 执行:
 
    ```sh
