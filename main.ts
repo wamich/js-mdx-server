@@ -19,25 +19,29 @@ function main() {
   });
 
   if (flags.help) {
-    console.log(`参数说明:
+    console.log(`
+当前版本: v0.1
 
---port: (可选)。服务运行端口，默认端口：3000
+Usage(使用): deno run -A main.ts [options]
 
---dir:  (必填)。请指定绝对路径！表示mdx文件所在目录。多个mdx文件时，请分别建立不同目录，此时dir参数应该为这些目录的上级目录。例如：
-  1. 一个 mdx 文件时，dir 参数为: 父级目录。
-    └── *父级目录*
-        └── oaldpe.mdx
-  2. 多个 mdx 文件时，dir 参数为: 祖父级目录。
-    └── *祖父级目录*
-        ├── 精选牛津十
-        │   ├── oaldpe.mdx
-        │   ├── oaldpe.mdd
-        │   ├── oaldpe1.mdd
-        │   ├── oaldpe2.mdd
-        │   ├── oaldpe3.mdd
-        │   └── oaldpe4.mdd
-        └── 21 世纪英汉词典
-            └── 21 世纪英汉词典.mdx
+Options（参数说明）:
+  -h, --help         显示帮助信息
+  -p, --port: (可选)。服务运行端口，默认端口：3000
+  -d, --dir:  (必填)。请指定绝对路径！示例如下：
+      1. 一个 mdx 文件时，dir 参数为: *父级目录* 的绝对路径。
+        └── 父级目录
+            └── oaldpe.mdx
+      2. 多个 mdx 文件时，dir 参数为: *祖父级目录* 的绝对路径。
+        └── 祖父级目录
+            ├── 精选牛津十
+            │   ├── oaldpe.mdx
+            │   ├── oaldpe.mdd
+            │   ├── oaldpe1.mdd
+            │   ├── oaldpe2.mdd
+            │   ├── oaldpe3.mdd
+            │   └── oaldpe4.mdd
+            └── 21 世纪英汉词典
+                └── 21 世纪英汉词典.mdx
 `);
     return;
   }

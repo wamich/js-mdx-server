@@ -52,10 +52,23 @@ export class MdxServer {
 
     // 2.1 hasn't ext (means to lookup in mdx)
     if (!ext) {
-      const result = loop2AvoidLink(mdx, key);
-      if (result?.definition) {
-        const html = assemblyHtml(result.definition);
-        return c.html(html, 200);
+      const wordArr: string[] = [key];
+      if (/^[A-Z]+$/.test(key)) {
+        // camel case
+        wordArr.push(key.slice(0) + key.slice(1).toLowerCase());
+        // lower case
+        wordArr.push(key.toLowerCase());
+      } else if (/[A-Z]/.test(key)) {
+        // lower case
+        wordArr.push(key.toLowerCase());
+      }
+      for (let i = 0; i < wordArr.length; i++) {
+        const word = wordArr[i];
+        const result = loop2AvoidLink(mdx, word);
+        if (result?.definition) {
+          const html = assemblyHtml(result.definition);
+          return c.html(html, 200);
+        }
       }
     }
     // 2.2 has ext (means a resource in mddArr)
