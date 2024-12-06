@@ -1,5 +1,6 @@
 import { Hono } from "jsr:@hono/hono";
 import { cors } from "jsr:@hono/hono/cors";
+import { etag } from "jsr:@hono/hono/etag";
 
 import { parseArgs } from "jsr:@std/cli/parse-args";
 
@@ -65,6 +66,8 @@ Options（参数说明）:
   const mdxServers = results.map((result) => {
     const controller = new AbortController();
     const app = new Hono();
+    // for http 304 cache
+    app.use("*", etag({ weak: true }));
     app.get("/*", (c) => mdxServer.lookup(c));
     const server = Deno.serve(
       { port: 0, signal: controller.signal, hostname: Hostname },
@@ -86,7 +89,8 @@ Options（参数说明）:
   mainApp.post("/api/info", (c) => c.json({ data: mdxServers.map((it) => it.info()) }));
 
   const onListen = () => {
-    console.info(`Server is running.\nPlease open: %chttp://${Hostname}:${port}/`, "color:green;");
+    console.info("Server is running.");
+    console.info(`Please open: %chttp://${Hostname}:${port}/`, "color:green;");
   };
   const mainServer = Deno.serve({ port, onListen, hostname: Hostname }, mainApp.fetch);
 

@@ -4,7 +4,8 @@
 
 ## 支持多 mdd 文件
 
-推荐词典: [牛津高阶双解第 10 版](https://forum.freemdict.com/t/topic/30466)
+推荐词典: [精装 - 牛津高阶双解第 10 版完美版（OALDPE）](https://forum.freemdict.com/t/topic/30466)。  
+下载完该词典后，请进一步参考 [词典适配说明](https://mingchang.wang/FAQ#mdx)。
 
 ## 前提
 
