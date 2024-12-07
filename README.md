@@ -20,6 +20,12 @@
   deno install
   ```
 
+## 下载
+
+```sh
+git clone --recurse-submodules https://github.com/wamich/js-mdx-server.git
+```
+
 ## 运行
 
 > **命令行参数**

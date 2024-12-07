@@ -85,6 +85,8 @@ Options（参数说明）:
   // main server
   const mainApp = new Hono();
   mainApp.use(cors());
+  // for http 304 cache
+  mainApp.use("*", etag({ weak: true }));
   mainApp.get("/*", mainHandler);
   mainApp.post("/api/info", (c) => c.json({ data: mdxServers.map((it) => it.info()) }));
 
