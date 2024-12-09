@@ -106,7 +106,9 @@ Options（参数说明）:
 
   // 监听退出信号，确保所有服务关闭
   Deno.addSignalListener("SIGINT", shutdownServers);
-  Deno.addSignalListener("SIGTERM", shutdownServers);
+
+  // TODO: win 不支持
+  // Deno.addSignalListener("SIGTERM", shutdownServers);
 }
 
 main();

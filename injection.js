@@ -68,22 +68,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 双击跳转查词
   document.addEventListener("dblclick", () => {
-    const sel = document.getSelection().toString();
-    if (/^\w+$/g.test(sel)) {
-      parentWin.postMessage({ select: sel }, { targetOrigin: "*" });
+    const select = document.getSelection().toString().trim();
+    if (/^\w+$/g.test(select)) {
+      parentWin.postMessage({ select }, { targetOrigin: "*" });
     }
   });
 
   const left = [",", "<", "，", "《", "ArrowLeft"];
   const right = [".", ">", "。", "》", "ArrowRight"];
+
   // 模拟浏览器历史，快捷键前进后退
   document.addEventListener("keyup", (e) => {
-    let jump = 0;
+    let jump = undefined;
 
     if (left.includes(e.key)) jump = -1;
     else if (right.includes(e.key)) jump = 1;
 
-    if (jump === 0) return;
+    if (jump === undefined) return;
+
+    e.preventDefault();
+    e.stopPropagation();
     parentWin.postMessage({ jump }, { targetOrigin: "*" });
   });
 

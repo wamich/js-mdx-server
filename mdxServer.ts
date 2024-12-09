@@ -2,7 +2,7 @@ import { Mdict } from "js-mdict";
 import { Hono, type Context } from "jsr:@hono/hono";
 import { getMimeType } from "jsr:@hono/hono/utils/mime";
 import { decodeBase64 } from "jsr:@std/encoding/base64";
-import { extname, join } from "jsr:@std/path";
+import { basename, extname, join } from "jsr:@std/path";
 import { FallbackMimeType, MdictFileInfo } from "./util.ts";
 
 type IServerInfo = {
@@ -97,6 +97,7 @@ export class MdxServer {
       hostname: this.serverInfo.server.addr.hostname,
       port: this.serverInfo.server.addr.port,
       mdxDir: this.mdxDir,
+      title: basename(this.mdxDir),
     };
   }
 }
