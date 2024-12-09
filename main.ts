@@ -1,8 +1,9 @@
-import { Hono } from "jsr:@hono/hono";
-import { cors } from "jsr:@hono/hono/cors";
-import { etag } from "jsr:@hono/hono/etag";
-
-import { parseArgs } from "jsr:@std/cli/parse-args";
+import { serve } from "@hono/node-server";
+import { program } from "commander";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { etag } from "hono/etag";
+import process from "node:process";
 
 import { mainHandler } from "./mainHandler.ts";
 import { MdxServer } from "./mdxServer.ts";
@@ -11,19 +12,19 @@ import { scanDir } from "./util.ts";
 const Hostname = "127.0.0.1";
 
 function main() {
-  // 命令行参数
-  const flags = parseArgs(Deno.args, {
-    boolean: ["help"],
-    string: ["port", "dir"], // 端口、mdx目录
-    default: { port: "3000" }, // 默认端口
-    alias: { p: "port", d: "dir", h: "help" }, // 短别名
-  });
+  program
+    .option("-h, --help", "帮助信息", false)
+    .option("-p, --port <char>", "服务端口", "3000") // 默认3000端口
+    .option("-d, --dir <char>", "mdx目录");
+
+  program.parse(process.argv);
+  const flags = program.opts();
 
   if (flags.help) {
     console.log(`
-当前版本: v0.1
+当前版本: v0.2
 
-Usage(使用): deno run -A main.ts [options]
+Usage(使用): npx tsx main.ts [options]
 
 Options（参数说明）:
   -h, --help         显示帮助信息
@@ -64,16 +65,12 @@ Options（参数说明）:
 
   // mdx server
   const mdxServers = results.map((result) => {
-    const controller = new AbortController();
     const app = new Hono();
     // for http 304 cache
     app.use("*", etag({ weak: true }));
     app.get("/*", (c) => mdxServer.lookup(c));
-    const server = Deno.serve(
-      { port: 0, signal: controller.signal, hostname: Hostname },
-      app.fetch
-    );
-    const mdxServer = new MdxServer(result.mdxDir, result.fileInfo, { controller, server, app });
+    const server = serve({ port: 0, fetch: app.fetch });
+    const mdxServer = new MdxServer(result.mdxDir, result.fileInfo, { server, app });
     return mdxServer;
   });
 
@@ -90,25 +87,24 @@ Options（参数说明）:
   mainApp.get("/*", mainHandler);
   mainApp.post("/api/info", (c) => c.json({ data: mdxServers.map((it) => it.info()) }));
 
+  const mainServer = serve({ port, fetch: mainApp.fetch });
+
   const onListen = () => {
     console.info("Server is running.");
     console.info(`Please open: %chttp://${Hostname}:${port}/`, "color:green;");
   };
-  const mainServer = Deno.serve({ port, onListen, hostname: Hostname }, mainApp.fetch);
+  onListen();
 
   // 捕获终止信号，关闭所有服务器
   function shutdownServers() {
     console.log("\nShutting down all servers...");
-    mdxServers.forEach(({ serverInfo: { controller } }) => controller.abort());
+    mdxServers.forEach(({ serverInfo: { server } }) => server.close());
     mdxServers.splice(0, mdxServers.length - 1);
-    mainServer.shutdown();
+    mainServer.close();
   }
 
   // 监听退出信号，确保所有服务关闭
-  Deno.addSignalListener("SIGINT", shutdownServers);
-
-  // TODO: win 不支持
-  // Deno.addSignalListener("SIGTERM", shutdownServers);
+  process.addListener("SIGINT", shutdownServers);
 }
 
 main();

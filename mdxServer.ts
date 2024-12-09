@@ -1,13 +1,16 @@
-import { Mdict } from "js-mdict";
-import { Hono, type Context } from "jsr:@hono/hono";
-import { getMimeType } from "jsr:@hono/hono/utils/mime";
-import { decodeBase64 } from "jsr:@std/encoding/base64";
-import { basename, extname, join } from "jsr:@std/path";
-import { FallbackMimeType, MdictFileInfo } from "./util.ts";
+import { ServerType } from "@hono/node-server";
+import { Hono, type Context } from "hono";
+import { getMimeType } from "hono/utils/mime";
+import Mdict from "mdict-js";
+import { Buffer } from "node:buffer";
+import { createReadStream, readFileSync } from "node:fs";
+import { stat } from "node:fs/promises";
+import { AddressInfo } from "node:net";
+import { basename, extname, join } from "node:path";
+import { createStreamBody, FallbackMimeType, MdictFileInfo } from "./util.ts";
 
 type IServerInfo = {
-  controller: AbortController;
-  server: Deno.HttpServer<Deno.NetAddr>;
+  server: ServerType;
   app: Hono;
 };
 
@@ -34,12 +37,12 @@ export class MdxServer {
     // 1. 是否是mdx目录中的静态文件？
     const staticPath = join(this.mdxDir, ...key.split("/"));
     try {
-      const stats = await Deno.stat(staticPath);
-      if (stats.isFile) {
+      const stats = await stat(staticPath);
+      if (stats.isFile()) {
         // sendFile
-        const file = await Deno.open(staticPath);
         c.header("Content-Type", mimeType || FallbackMimeType);
-        return c.body(file.readable);
+        const body = createStreamBody(createReadStream(staticPath));
+        return c.body(body);
       }
     } catch (_error) {
       // static file not exist, try to search in mdx or mdd
@@ -82,7 +85,7 @@ export class MdxServer {
         c.header("Content-Type", mimeType || FallbackMimeType);
         c.header("Content-Disposition", `inline; filename="${key}"`);
         // sendBuffer
-        const buffer = decodeBase64(definition).buffer;
+        const buffer = Buffer.from(definition, "base64");
         return c.body(buffer);
       }
     }
@@ -91,13 +94,13 @@ export class MdxServer {
   }
 
   info() {
+    const address = this.serverInfo.server.address() as AddressInfo;
     return {
       fileInfo: this.fileInfo,
       mdxHeader: this.mdictInfo.mdx.header,
-      hostname: this.serverInfo.server.addr.hostname,
-      port: this.serverInfo.server.addr.port,
+      port: address.port,
       mdxDir: this.mdxDir,
-      title: basename(this.mdxDir),
+      title: basename(this.mdxDir), // 页面展示的tab标题
     };
   }
 }
@@ -112,6 +115,7 @@ function loop2AvoidLink(mdx: Mdict, key: string) {
     const matchArr = result.definition.match(/@@@LINK=(\w+)/);
     if (!matchArr) break;
     if (!matchArr[1]) break;
+
     /**
      * 避免无限循环
      * key == way
@@ -127,7 +131,7 @@ function loop2AvoidLink(mdx: Mdict, key: string) {
   if (result.definition) return result;
 }
 
-const injectionScriptHtml = Deno.readTextFileSync(join(import.meta.dirname!, "injection.js"));
+const injectionScriptHtml = readFileSync(join(__dirname, "injection.js")).toString();
 
 // append style and injection.js
 function assemblyHtml(definition: string) {

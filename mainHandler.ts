@@ -1,15 +1,17 @@
-import { join } from "@std/path";
-import { getMimeType } from "jsr:@hono/hono/utils/mime";
-import { Context } from "jsr:@hono/hono";
-import { FallbackMimeType } from "./util.ts";
+import { Context } from "hono";
+import { getMimeType } from "hono/utils/mime";
+import { createReadStream, readFileSync } from "node:fs";
+import { stat } from "node:fs/promises";
+import { join } from "node:path";
+import { createStreamBody, FallbackMimeType } from "./util.ts";
 
-const root = join(import.meta.dirname!, "client", "dist");
+const root = join(__dirname, "client", "dist");
 
 const getIndexHtml = (() => {
   let indexHtml: string;
   return () => {
     if (indexHtml) return indexHtml;
-    indexHtml = Deno.readTextFileSync(join(root, "index.html"));
+    indexHtml = readFileSync(join(root, "index.html")).toString();
     return indexHtml;
   };
 })();
@@ -22,13 +24,13 @@ export async function mainHandler(c: Context) {
 
   const ifFilePath = join(root, ...path.split("/"));
   try {
-    const stat = await Deno.stat(ifFilePath);
+    const stats = await stat(ifFilePath);
     const mimeType = getMimeType(path);
-    if (stat.isFile) {
-      // sendFile
-      const file = await Deno.open(ifFilePath);
+    if (stats.isFile()) {
       c.header("Content-Type", mimeType || FallbackMimeType);
-      return c.body(file.readable);
+      // sendFile
+      const body = createStreamBody(createReadStream(ifFilePath));
+      return c.body(body);
     }
   } catch (_error) {
     // static file not exist, return index.html

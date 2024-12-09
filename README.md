@@ -1,6 +1,6 @@
 # js-mdx-server
 
-> 基于 [terasum/js-mdict](https://github.com/terasum/js-mdict)
+> 基于 [tonyzhou1890/js-mdict](https://github.com/tonyzhou1890/js-mdict)
 
 ## 支持多 mdd 文件
 
@@ -15,15 +15,16 @@
   git clone --recurse-submodules https://github.com/wamich/js-mdx-server.git
   ```
 
-- 安装 deno:
+- 安装 node.js:
 
-  - en: https://docs.deno.com/runtime/
-  - cn: https://www.denojs.cn/#installation
+  - 下载地址: https://nodejs.org/zh-cn
 
 - 安装 依赖:
 
   ```sh
-  deno install
+  npm install
+  # 或者
+  pnpm install
   ```
 
 ## 运行
@@ -31,11 +32,11 @@
 > **命令行参数**
 
 ```sh
-deno run -A main.ts -h
+npx tsx main.ts -h
 
-当前版本: v0.1
+当前版本: v0.2
 
-Usage(使用): deno run -A main.ts [options]
+Usage(使用): npx tsx main.ts [options]
 
 Options（参数说明）:
   -h, --help         显示帮助信息
@@ -60,23 +61,23 @@ Options（参数说明）:
 1. 运行方式一：(直接运行)
 
    ```sh
-   deno run -A main.ts --dir='你的目录!' --port=3000
+   npx tsx main.ts --dir='你的目录!' --port=3000
 
-   # mac
-   deno run -A main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3000
+   # mac 示例:
+   npx tsx main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3000
 
-   # win
-   deno run -A main.ts --dir='C:\Users\Ming\Downloads\OALD 2024.09' --port=3000
+   # win 示例:
+   npx tsx main.ts --dir='C:\Users\Ming\Downloads\OALD 2024.09' --port=3000
    ```
 
 2. 运行方式二：(调试运行)
 
-   - 据实修改 **deno.json** 中 **--dir 参数**、**--port 参数**。
+   - 据实修改 **package.json** 中，**scripts** 字段中 **--dir 参数**、**--port 参数**。
 
    ```json
    {
-     "tasks": {
-       "dev": "deno run -A --watch main.ts --dir='/Users/ming/dict-workspace/dictionaries/' --port=3000"
+     "scripts": {
+       "dev": "tsx watch main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3000"
      }
    }
    ```
@@ -84,7 +85,7 @@ Options（参数说明）:
    - 执行:
 
    ```sh
-   deno task dev
+   npm run dev
    ```
 
 ## 说明

@@ -1,4 +1,5 @@
-import { extname, join } from "jsr:@std/path";
+import { statSync, readdirSync, ReadStream } from "node:fs";
+import { extname, join } from "node:path";
 
 export const FallbackMimeType = "application/octet-stream";
 
@@ -15,8 +16,8 @@ export type MdictFileInfo = {
 export const scanDir = (_dir: string) => {
   let rootDir: string;
   try {
-    const stats = Deno.statSync(_dir);
-    if (!stats.isDirectory) throw "--dir 参数: 必须是目录，要求是绝对路径";
+    const stats = statSync(_dir);
+    if (!stats.isDirectory()) throw "--dir 参数: 必须是目录，要求是绝对路径";
     rootDir = _dir;
   } catch (error) {
     console.error(error);
@@ -26,11 +27,12 @@ export const scanDir = (_dir: string) => {
   const results: { mdxDir: string; fileInfo: MdictFileInfo }[] = [];
 
   // 1. 二级目录搜索
-  for (const dirEntry of Deno.readDirSync(rootDir)) {
+  for (const dirEntry of readdirSync(rootDir)) {
     // 只考虑root目录下的文件夹，不考虑其他
-    if (!dirEntry.isDirectory) continue;
+    const stats = statSync(join(_dir, dirEntry));
+    if (!stats.isDirectory()) continue;
 
-    const mdxDir = join(rootDir, dirEntry.name);
+    const mdxDir = join(rootDir, dirEntry);
     const fileInfo = findMdictInfo(mdxDir);
     if (fileInfo.mdx) results.push({ mdxDir, fileInfo });
   }
@@ -52,19 +54,36 @@ export function findMdictInfo(mdxDir: string) {
   };
 
   // 1. 词典mdx所在文件夹下的1级
-  for (const dirEntry of Deno.readDirSync(mdxDir)) {
-    const file = dirEntry.name;
+  for (const dirEntry of readdirSync(mdxDir)) {
+    const stats = statSync(join(mdxDir, dirEntry));
 
     // 只考虑1级目录下的文件，不考虑其他
-    if (!dirEntry.isFile) continue;
+    if (!stats.isFile()) continue;
 
-    const ext = extname(file);
+    const ext = extname(dirEntry);
     if (ext === ".mdx") {
-      mdictInfo.mdx = file;
+      mdictInfo.mdx = dirEntry;
     } else if (ext === ".mdd") {
-      mdictInfo.mddArr.push(file);
+      mdictInfo.mddArr.push(dirEntry);
     }
   }
 
   return mdictInfo;
 }
+
+export const createStreamBody = (stream: ReadStream) => {
+  const body = new ReadableStream({
+    start(controller) {
+      stream.on("data", (chunk) => {
+        controller.enqueue(chunk);
+      });
+      stream.on("end", () => {
+        controller.close();
+      });
+    },
+    cancel() {
+      stream.destroy();
+    },
+  });
+  return body;
+};

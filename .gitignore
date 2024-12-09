@@ -1,4 +1,5 @@
 .vscode
 .idea
-deno.lock
 *.http
+node_modules
+*-lock.*

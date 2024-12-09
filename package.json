@@ -1,0 +1,26 @@
+{
+  "name": "js-mdx-server",
+  "version": "0.2",
+  "keywords": [
+    "mdict",
+    "mdx",
+    "mdd",
+    "个人词库"
+  ],
+  "author": "wamich@126.com",
+  "description": "支持多mdd文件的本地词典服务器。初始目的：作为【个人词库】浏览器插件词典侧边栏，方便查词。也可以独立使用。",
+  "license": "GPL-3.0",
+  "scripts": {
+    "dev": "tsx watch main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3000"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "commander": "^12.1.0",
+    "hono": "^4.6.13",
+    "mdict-js": "^10.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2"
+  }
+}
