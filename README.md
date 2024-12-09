@@ -9,6 +9,12 @@
 
 ## 前提
 
+- 下载
+
+  ```sh
+  git clone --recurse-submodules https://github.com/wamich/js-mdx-server.git
+  ```
+
 - 安装 deno:
 
   - en: https://docs.deno.com/runtime/
@@ -19,12 +25,6 @@
   ```sh
   deno install
   ```
-
-## 下载
-
-```sh
-git clone --recurse-submodules https://github.com/wamich/js-mdx-server.git
-```
 
 ## 运行
 
@@ -42,10 +42,10 @@ Options（参数说明）:
   -p, --port: (可选)。服务运行端口，默认端口：3000
   -d, --dir:  (必填)。请指定绝对路径！示例如下：
       1. 一个 mdx 文件时，dir 参数为: *父级目录* 的绝对路径。
-        └── 父级目录
+        └── *父级目录*
             └── oaldpe.mdx
       2. 多个 mdx 文件时，dir 参数为: *祖父级目录* 的绝对路径。
-        └── 祖父级目录
+        └── *祖父级目录*
             ├── 精选牛津十
             │   ├── oaldpe.mdx
             │   ├── oaldpe.mdd
@@ -61,6 +61,12 @@ Options（参数说明）:
 
    ```sh
    deno run -A main.ts --dir='你的目录!' --port=3000
+
+   # mac
+   deno run -A main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3000
+
+   # win
+   deno run -A main.ts --dir='C:\Users\Ming\Downloads\OALD 2024.09' --port=3000
    ```
 
 2. 运行方式二：(调试运行)
