@@ -107,10 +107,18 @@ function loop2AvoidLink(mdx: Mdict, key: string) {
   let result = mdx.lookup(key);
 
   while (true) {
-    if (!result.definition) break;
+    if (!result.definition) return;
 
     const matchArr = result.definition.match(/@@@LINK=(\w+)/);
     if (!matchArr) break;
+    if (!matchArr[1]) break;
+    /**
+     * 避免无限循环
+     * key == way
+     * result.definition == '@@@LINK=way\r\n\r\n'
+     * matchArr[1] == way
+     */
+    if (matchArr[1] === key) return;
 
     key = matchArr[1];
     result = mdx.lookup(key);
