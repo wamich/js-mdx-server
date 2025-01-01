@@ -109,7 +109,11 @@ export class MdxServer {
 function loop2AvoidLink(mdx: Mdict, key: string) {
   let result = mdx.lookup(key);
 
+  // TODO: 这个mdict-js库还是不完美
+  const searched = new Set<string>();
+
   while (true) {
+    searched.add(key);
     if (!result.definition) return;
 
     const matchArr = result.definition.match(/@@@LINK=(\w+)/);
@@ -117,7 +121,8 @@ function loop2AvoidLink(mdx: Mdict, key: string) {
     if (!matchArr[1]) break;
 
     /**
-     * 避免无限循环
+     * 避免无限循环(way, chinese)
+     * TODO: Chinese chinese
      * key == way
      * result.definition == '@@@LINK=way\r\n\r\n'
      * matchArr[1] == way
@@ -125,6 +130,9 @@ function loop2AvoidLink(mdx: Mdict, key: string) {
     if (matchArr[1] === key) return;
 
     key = matchArr[1];
+
+    // TODO: crayfish, crawfish 导致死循环
+    if (searched.has(key)) return;
     result = mdx.lookup(key);
   }
 
