@@ -1,6 +1,6 @@
 # js-mdx-server
 
-> 基于 [tonyzhou1890/js-mdict](https://github.com/tonyzhou1890/js-mdict)
+> 基于 [terasum/js-mdict](https://github.com/terasum/js-mdict)
 
 ## 支持多 mdd 文件
 

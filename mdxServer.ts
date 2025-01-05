@@ -1,7 +1,7 @@
 import { ServerType } from "@hono/node-server";
 import { Hono, type Context } from "hono";
 import { getMimeType } from "hono/utils/mime";
-import Mdict from "mdict-js";
+import { MDX, MDD } from "js-mdict";
 import { Buffer } from "node:buffer";
 import { createReadStream, readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
@@ -15,7 +15,7 @@ type IServerInfo = {
 };
 
 export class MdxServer {
-  mdictInfo: { mdx: Mdict; mddArr: Mdict[] };
+  mdictInfo: { mdx: MDX; mddArr: MDD[] };
 
   constructor(
     public mdxDir: string,
@@ -23,8 +23,8 @@ export class MdxServer {
     public serverInfo: IServerInfo
   ) {
     this.mdictInfo = {
-      mdx: new Mdict(join(mdxDir, this.fileInfo.mdx)),
-      mddArr: this.fileInfo.mddArr.map((mdd) => new Mdict(join(mdxDir, mdd))),
+      mdx: new MDX(join(mdxDir, this.fileInfo.mdx)),
+      mddArr: this.fileInfo.mddArr.map((mdd) => new MDD(join(mdxDir, mdd))),
     };
   }
 
@@ -78,7 +78,7 @@ export class MdxServer {
     else if (mddArr.length) {
       const resourceKey = "\\" + key.replaceAll("/", "\\");
       for (let i = 0; i < mddArr.length; i++) {
-        const { keyText, definition } = mddArr[i].lookup(resourceKey);
+        const { keyText, definition } = mddArr[i].locate(resourceKey);
         if (!definition) continue;
         if (keyText !== resourceKey) continue;
 
@@ -106,10 +106,10 @@ export class MdxServer {
 }
 
 // loop to avoid "@@@LINK"
-function loop2AvoidLink(mdx: Mdict, key: string) {
+function loop2AvoidLink(mdx: MDX, key: string) {
   let result = mdx.lookup(key);
 
-  // TODO: 这个mdict-js库还是不完美
+  // 防止死循环
   const searched = new Set<string>();
 
   while (true) {
@@ -121,8 +121,6 @@ function loop2AvoidLink(mdx: Mdict, key: string) {
     if (!matchArr[1]) break;
 
     /**
-     * 避免无限循环(way, chinese)
-     * TODO: Chinese chinese
      * key == way
      * result.definition == '@@@LINK=way\r\n\r\n'
      * matchArr[1] == way
@@ -131,7 +129,6 @@ function loop2AvoidLink(mdx: Mdict, key: string) {
 
     key = matchArr[1];
 
-    // TODO: crayfish, crawfish 导致死循环
     if (searched.has(key)) return;
     result = mdx.lookup(key);
   }
