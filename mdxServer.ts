@@ -116,11 +116,18 @@ function loop2AvoidLink(mdx: MDX, key: string) {
     searched.add(key);
     if (!result.definition) return;
 
-    const matchArr = result.definition.match(/@@@LINK=(\w+)/);
+    /**
+     * ex:
+     * key == abner
+     * result.definition == '@@@LINK=abner-doubleday\r\n\r\n'
+     * matchArr[1] == abner-doubleday
+     */
+    const matchArr = result.definition.match(/@@@LINK=(\S+)/);
     if (!matchArr) break;
     if (!matchArr[1]) break;
 
     /**
+     * ex:
      * key == way
      * result.definition == '@@@LINK=way\r\n\r\n'
      * matchArr[1] == way
