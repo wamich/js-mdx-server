@@ -27,6 +27,35 @@
   pnpm install
   ```
 
+## 说明
+
+- **main.ts**: 程序主入口
+- **injection.html**: 公共的注入内容，每个词典都会注入。参考 [ninja33/mdx-server](https://github.com/ninja33/mdx-server)
+- 如需为特定 mdx 词典定制或修复时，一般有几种方法：
+
+  1. 直接修改 mdx 词典引用的 js 或 css 文件
+  2. 可在该 mdx 词典目录下，新建一个 html 文件，以实现注入独特定的需求。示例：
+
+  ```html
+  <!-- 如为单独的词典（CED_231010_v231014.mdx），进行自定义。 -->
+  <!-- 原词典内容：特殊单词之间没有空格，而采用是边距隔开。 -->
+  <script>
+    // inject js
+    document.querySelectorAll("div.ced23 a").forEach((a) => {
+      // 特殊单词前后插入空格字符串
+      a.insertAdjacentText("beforebegin", " ");
+      a.insertAdjacentText("afterend", " ");
+    });
+  </script>
+  <style>
+    /* inject css */
+    div.ced23 a {
+      /* 禁止边距分割 */
+      margin: 0px !important;
+    }
+  </style>
+  ```
+
 ## 运行
 
 > **命令行参数**
@@ -87,8 +116,3 @@ Options（参数说明）:
    ```sh
    npm run dev
    ```
-
-## 说明
-
-- **main.ts**: 程序主入口
-- **injection.js**: 参考 [ninja33/mdx-server](https://github.com/ninja33/mdx-server)

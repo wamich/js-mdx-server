@@ -60,24 +60,22 @@ Options（参数说明）:
   // dir 参数
   if (!flags.dir) throw "--dir 参数: 表示 mdx文件 所在目录的上级目录，请指定绝对路径";
 
-  const results = scanDir(flags.dir);
-  if (!results.length) throw "没有找到mdx文件，请检查！";
+  const scanResults = scanDir(flags.dir);
+  if (!scanResults.length) throw "没有找到mdx文件，请检查！";
 
   // mdx server
-  const mdxServers = results.map((result) => {
+  const mdxServers = scanResults.map((scanResult) => {
     const app = new Hono();
     // for http 304 cache
     app.use("*", etag({ weak: true }));
     app.get("/*", (c) => mdxServer.lookup(c));
     const server = serve({ port: 0, fetch: app.fetch });
-    const mdxServer = new MdxServer(result.mdxDir, result.fileInfo, { server, app });
+    const mdxServer = new MdxServer(scanResult, { server, app });
     return mdxServer;
   });
 
-  console.log(
-    "MDX FILE INFO:",
-    mdxServers.map((it) => it.fileInfo)
-  );
+  console.log("MDX FILE INFO:");
+  mdxServers.map((it) => console.log(it.scanResult));
 
   // main server
   const mainApp = new Hono();
@@ -85,7 +83,7 @@ Options（参数说明）:
   // for http 304 cache
   mainApp.use("*", etag({ weak: true }));
   mainApp.get("/*", mainHandler);
-  mainApp.post("/api/info", (c) => c.json({ data: mdxServers.map((it) => it.info()) }));
+  mainApp.post("/api/info", (c) => c.json({ data: mdxServers.map((it) => it.info) }));
 
   const mainServer = serve({ port, fetch: mainApp.fetch });
 

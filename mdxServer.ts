@@ -1,13 +1,13 @@
 import { ServerType } from "@hono/node-server";
 import { Hono, type Context } from "hono";
 import { getMimeType } from "hono/utils/mime";
-import { MDX, MDD } from "js-mdict";
+import { MDX, MDD, MDictHeader } from "js-mdict";
 import { Buffer } from "node:buffer";
 import { createReadStream, readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { AddressInfo } from "node:net";
 import { basename, extname, join } from "node:path";
-import { createStreamBody, FallbackMimeType, MdictFileInfo } from "./util.ts";
+import { createStreamBody, FallbackMimeType, IScanResult, MdictFilesInfo } from "./util.ts";
 
 type IServerInfo = {
   server: ServerType;
@@ -17,15 +17,45 @@ type IServerInfo = {
 export class MdxServer {
   mdictInfo: { mdx: MDX; mddArr: MDD[] };
 
-  constructor(
-    public mdxDir: string,
-    public fileInfo: MdictFileInfo,
-    public serverInfo: IServerInfo
-  ) {
+  // 如需特殊定制功能，可在mdx词典目录，新建一个html文件，以实现注入独特定的需求
+  injectionHtml?: string;
+
+  constructor(public scanResult: IScanResult, public serverInfo: IServerInfo) {
+    const { mdxDir, filesInfo } = scanResult;
     this.mdictInfo = {
-      mdx: new MDX(join(mdxDir, this.fileInfo.mdx)),
-      mddArr: this.fileInfo.mddArr.map((mdd) => new MDD(join(mdxDir, mdd))),
+      mdx: new MDX(join(mdxDir, filesInfo.mdx)),
+      mddArr: filesInfo.mddArr.map((mdd) => new MDD(join(mdxDir, mdd))),
     };
+
+    if (filesInfo.html) {
+      this.injectionHtml = readFileSync(join(mdxDir, filesInfo.html)).toString();
+    }
+  }
+
+  _info: {
+    mdxDir: string;
+    fileInfo: MdictFilesInfo;
+    mdxHeader: MDictHeader;
+    port: number;
+    title: string; // 页面展示的tab标题
+  };
+
+  get info() {
+    if (this._info) return this._info;
+
+    const { mdxDir, filesInfo } = this.scanResult;
+    const address = this.serverInfo.server.address() as AddressInfo;
+
+    const info = {
+      mdxDir: mdxDir,
+      fileInfo: filesInfo,
+      mdxHeader: this.mdictInfo.mdx.header,
+      port: address.port,
+      title: basename(mdxDir),
+    };
+    this._info = info;
+
+    return info;
   }
 
   async lookup(c: Context) {
@@ -35,7 +65,7 @@ export class MdxServer {
     const mimeType = getMimeType(key);
 
     // 1. 是否是mdx目录中的静态文件？
-    const staticPath = join(this.mdxDir, ...key.split("/"));
+    const staticPath = join(this.scanResult.mdxDir, ...key.split("/"));
     try {
       const stats = await stat(staticPath);
       if (stats.isFile()) {
@@ -69,7 +99,7 @@ export class MdxServer {
         const word = wordArr[i];
         const result = loop2AvoidLink(mdx, word);
         if (result?.definition) {
-          const html = assemblyHtml(result.definition);
+          const html = assemblyHtml(this.info.title, result.definition, this.injectionHtml);
           return c.html(html, 200);
         }
       }
@@ -91,17 +121,6 @@ export class MdxServer {
     }
 
     return c.notFound();
-  }
-
-  info() {
-    const address = this.serverInfo.server.address() as AddressInfo;
-    return {
-      fileInfo: this.fileInfo,
-      mdxHeader: this.mdictInfo.mdx.header,
-      port: address.port,
-      mdxDir: this.mdxDir,
-      title: basename(this.mdxDir), // 页面展示的tab标题
-    };
   }
 }
 
@@ -143,20 +162,21 @@ function loop2AvoidLink(mdx: MDX, key: string) {
   if (result.definition) return result;
 }
 
-const injectionScriptHtml = readFileSync(join(__dirname, "injection.js")).toString();
+// injection.html 公共的注入内容，每个词典都会注入
+const injectionHtml = readFileSync(join(__dirname, "injection.html")).toString();
 
-// append style and injection.js
-function assemblyHtml(definition: string) {
+/**
+ * append style and injection.js
+ * @param title 页面标题
+ * @param definition 词典定义
+ * @param mdxInjectionHtml mdx目录下html文件内容，用于针对该词典特殊自定义
+ * @returns 组装后的html
+ */
+function assemblyHtml(title: string, definition: string, mdxInjectionHtml?: string) {
   return /* html */ `
-  <style>
-    html, body {
-      padding: 0;
-      margin: 0;
-    }
-  </style>
   ${definition}
-  <script>
-    ${injectionScriptHtml}
-  </script>
+  ${injectionHtml || ""}
+  ${mdxInjectionHtml || ""}
+  <script>document.title = "${title}";</script>
   `;
 }

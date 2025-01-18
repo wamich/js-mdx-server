@@ -3,13 +3,25 @@ import { extname, join } from "node:path";
 
 export const FallbackMimeType = "application/octet-stream";
 
-export type MdictFileInfo = {
+export type MdictFilesInfo = {
   // 目录（如: 牛津高阶十）下的mdx文件名称。
   // 如: oaldpe.mdx
   mdx: string;
   // 目录（如: 牛津高阶十）下的mdd文件名称，可能有多个。
   // 如: [oaldpe.mdd, oaldpe.1.mdd, oaldpe.2.mdd, ]
   mddArr: string[];
+  // mdx目录下，独立注入的html，可以针对特定词典进行特殊定制
+  // 采用html，优点：
+  // 1. html文件可以写js，也可以写css
+  // 2. js、css文件可能已经被mdx词典引用，可以避免冲突
+  html?: string;
+};
+
+export type IScanResult = {
+  // mdx 所在目录
+  mdxDir: string;
+  // 文件信息，包括mdx、mdd、html文件名称
+  filesInfo: MdictFilesInfo;
 };
 
 // 扫描目录
@@ -24,7 +36,7 @@ export const scanDir = (_dir: string) => {
     throw "--dir 参数: 目录不存在，要求是绝对路径！";
   }
 
-  const results: { mdxDir: string; fileInfo: MdictFileInfo }[] = [];
+  const results: IScanResult[] = [];
 
   // 1. 二级目录搜索
   for (const dirEntry of readdirSync(rootDir)) {
@@ -34,21 +46,21 @@ export const scanDir = (_dir: string) => {
 
     const mdxDir = join(rootDir, dirEntry);
     const fileInfo = findMdictInfo(mdxDir);
-    if (fileInfo.mdx) results.push({ mdxDir, fileInfo });
+    if (fileInfo.mdx) results.push({ mdxDir, filesInfo: fileInfo });
   }
 
   // 2. 没有数据，则可能是一级目录
   if (results.length === 0) {
     const mdxDir = rootDir;
     const fileInfo = findMdictInfo(mdxDir);
-    if (fileInfo.mdx) results.push({ mdxDir, fileInfo });
+    if (fileInfo.mdx) results.push({ mdxDir, filesInfo: fileInfo });
   }
 
   return results;
 };
 
-export function findMdictInfo(mdxDir: string) {
-  const mdictInfo: MdictFileInfo = {
+function findMdictInfo(mdxDir: string) {
+  const mdictInfo: MdictFilesInfo = {
     mdx: "",
     mddArr: [],
   };
@@ -65,6 +77,8 @@ export function findMdictInfo(mdxDir: string) {
       mdictInfo.mdx = dirEntry;
     } else if (ext === ".mdd") {
       mdictInfo.mddArr.push(dirEntry);
+    } else if (ext === ".html") {
+      mdictInfo.html = dirEntry;
     }
   }
 
