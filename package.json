@@ -14,13 +14,13 @@
     "dev": "tsx watch main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3000"
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.7",
-    "commander": "^13.0.0",
-    "hono": "^4.6.16",
-    "js-mdict": "^6.0.6"
+    "@hono/node-server": "^1.14.1",
+    "commander": "^13.1.0",
+    "hono": "^4.7.8",
+    "js-mdict": "^6.0.8"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5",
-    "tsx": "^4.19.2"
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.4"
   }
 }
