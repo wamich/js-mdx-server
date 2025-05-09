@@ -1,4 +1,4 @@
-import { serve } from "@hono/node-server";
+import { serve, type ServerType } from "@hono/node-server";
 import { program } from "commander";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -9,16 +9,18 @@ import { mainHandler } from "./mainHandler.ts";
 import { MdxServer } from "./mdxServer.ts";
 import { scanDir } from "./util.ts";
 
-const Hostname = "127.0.0.1";
-
-function main() {
+async function main() {
   program
     .option("-h, --help", "帮助信息", false)
     .option("-p, --port <char>", "服务端口", "3000") // 默认3000端口
     .option("-d, --dir <char>", "mdx目录");
 
   program.parse(process.argv);
-  const flags = program.opts();
+  const flags = program.opts<{
+    help: boolean;
+    port: string;
+    dir: string;
+  }>();
 
   if (flags.help) {
     console.log(`
@@ -63,16 +65,68 @@ Options（参数说明）:
   const scanResults = scanDir(flags.dir);
   if (!scanResults.length) throw "没有找到mdx文件，请检查！";
 
-  // mdx server
-  const mdxServers = scanResults.map((scanResult) => {
-    const app = new Hono();
-    // for http 304 cache
-    app.use("*", etag({ weak: true }));
-    app.get("/*", (c) => mdxServer.lookup(c));
-    const server = serve({ port: 0, fetch: app.fetch });
-    const mdxServer = new MdxServer(scanResult, { server, app });
-    return mdxServer;
-  });
+  const mdxServers: MdxServer[] = [];
+
+  // Docker容器内运行: 因为子服务端口也需要对外暴露，配合环境变量确定端口范围
+  if (process.env.SUB_PORT_START && process.env.SUB_PORT_END) {
+    const subPortStart = parseInt(process.env.SUB_PORT_START);
+    const subPortEnd = parseInt(process.env.SUB_PORT_END);
+
+    const portCount = subPortEnd - subPortStart + 1;
+    if (portCount < scanResults.length) throw "端口范围不足，请指定更大的范围";
+
+    // 尝试端口
+    function tryServer(port: number, fetch: Hono["fetch"]) {
+      return new Promise<ServerType>((resolve, reject) => {
+        const server = serve({ port, fetch }, (_info) => {
+          resolve(server);
+        });
+        server.once("error", (err: NodeJS.ErrnoException) => {
+          const { code, message } = err;
+          reject(`code: ${code}, message: ${message}`);
+        });
+      });
+    }
+
+    let currPort = subPortStart;
+    for (let i = 0; i < scanResults.length; i++) {
+      const app = new Hono();
+      // for http 304 cache
+      app.use("*", etag({ weak: true }));
+      app.get("/*", (c) => mdxServer.lookup(c));
+
+      // 动态分配端口，如果端口占用，尝试下一个端口
+      let server: ServerType;
+      while (true) {
+        try {
+          server = await tryServer(currPort, app.fetch);
+          currPort++;
+          break;
+        } catch (error) {
+          // console.warn(error);
+          console.warn(`端口${currPort}占用，尝试${currPort + 1}`);
+          currPort++;
+          if (currPort > subPortEnd) throw "端口范围不足，请指定更大的范围";
+        }
+      }
+
+      const mdxServer = new MdxServer(scanResults[i], { server, app });
+      mdxServers.push(mdxServer);
+    }
+  }
+  // 裸主机 运行: 子服务端口动态分配
+  else {
+    for (let i = 0; i < scanResults.length; i++) {
+      const app = new Hono();
+      // for http 304 cache
+      app.use("*", etag({ weak: true }));
+      app.get("/*", (c) => mdxServer.lookup(c));
+
+      const server = serve({ port: 0, fetch: app.fetch });
+      const mdxServer = new MdxServer(scanResults[i], { server, app });
+      mdxServers.push(mdxServer);
+    }
+  }
 
   console.log("MDX FILE INFO:");
   mdxServers.map((it) => console.log(it.scanResult));
@@ -85,13 +139,10 @@ Options（参数说明）:
   mainApp.get("/*", mainHandler);
   mainApp.post("/api/info", (c) => c.json({ data: mdxServers.map((it) => it.info) }));
 
-  const mainServer = serve({ port, fetch: mainApp.fetch });
-
-  const onListen = () => {
+  const mainServer = serve({ port, fetch: mainApp.fetch }, (info) => {
     console.info("Server is running.");
-    console.info(`Please open: %chttp://${Hostname}:${port}/`, "color:green;");
-  };
-  onListen();
+    console.info(`Please open: %chttp://127.0.0.1:${info.port}/`, "color:green;");
+  });
 
   // 捕获终止信号，关闭所有服务器
   function shutdownServers() {

@@ -11,13 +11,13 @@
 
 - 安装 [node.js](https://nodejs.org/zh-cn)
 
-- 下载 项目
+- 下载项目
 
   ```sh
   git clone --recurse-submodules https://github.com/wamich/js-mdx-server.git
   ```
 
-- 安装 依赖:
+- 安装依赖:
 
   ```sh
   npm install
@@ -95,7 +95,7 @@ Options（参数说明）:
 
   ```sh
   # 1. 更新代码
-  git pull
+  git pull --recurse-submodules
 
   # 2. 安装依赖
   npm install
@@ -134,3 +134,80 @@ Options（参数说明）:
     }
   </style>
   ```
+
+## Docker 运行
+
+### 构建镜像 image
+
+- **本地**
+
+```sh
+# 通过 Dockerfile 构建镜像，名称为：js-mdx-server:0.2
+docker build -t js-mdx-server:0.2 .
+```
+
+- **NAS**
+
+```sh
+# 指定platform
+docker build --platform=linux/amd64 -t js-mdx-server-nas:0.2 .
+# 将镜像导出
+docker image save -o ./js-mdx-server-nas-0.2.tar js-mdx-server-nas:0.2
+# 将镜像上传至NAS中
+```
+
+### 运行容器 container
+
+- **本地**
+
+```sh
+docker run -d \
+  -p 3000:3000 \
+  -p 9001-9005:9001-9005 \
+  -e SUB_PORT_START=9001 \
+  -e SUB_PORT_END=9005 \
+  -v ~/dict-workspace/dictionaries:/root/dictionaries \
+  --name js-mdx-server \
+  js-mdx-server:0.2
+```
+
+- 主服务端口 : <u>[容器内]主服务端口</u>
+
+  > -p 3000:<u>3000</u>
+
+  - ‼️ 主服务端口: 3000，可修改
+  - ‼️ <u>[容器内]主服务端口</u>: <u>3000</u>，不可修改
+
+- 子服务端口范围 : <u>[容器内]子服务端口范围</u>
+
+  > -p 9001-9005:9001-9005
+
+  - ‼️ 预留端口范围：
+    - 范围**之差** 应当 **大于** 挂载目录下 mdx 词典目录的**数量**，例中的范围 9001-9005，即允许最多 5 个本地 mdx 词典目录
+  - ‼️ **本机**的端口范围 和 **容器**的端口范围 **必须保持一致!!**
+
+- 子服务端口（起始值）
+
+  > -e SUB_PORT_START=9001
+
+  - ‼️ 上述范围的**起始值**
+
+- 子服务端口（结束值）
+
+  > -e SUB_PORT_END=9005
+
+  - ‼️ 上述范围的**结束值**
+
+- 目录映射，本地词典目录 : <u>[容器内]词典目录</u>
+
+  > -v ~/dict-workspace/dictionaries:/root/dictionaries
+
+  - ‼️ 本地词典目录: 示例(~/dict-workspace/dictionaries)，请修改
+  - ‼️ <u>[容器内]词典目录</u>: /root/dictionaries，不可修改
+
+- **NAS**
+
+```sh
+# 在 NAS 中选择上传的镜像文件，并导入
+# 参照上述运行容器的命令行信息，配置容器
+```
