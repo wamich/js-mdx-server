@@ -32,7 +32,7 @@ export class MdxServer {
     }
   }
 
-  _info: {
+  _info!: {
     mdxDir: string;
     fileInfo: MdictFilesInfo;
     mdxHeader: MDictHeader;

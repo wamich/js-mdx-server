@@ -11,16 +11,17 @@
   "description": "支持多mdd文件的本地词典服务器。初始目的：作为【个人词库】浏览器插件词典侧边栏，方便查词。也可以独立使用。",
   "license": "GPL-3.0",
   "scripts": {
-    "dev": "tsx watch main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3000"
+    "dev": "tsx watch main.ts --dir='/Users/ming/dict-workspace/dictionaries' --port=3001",
+    "dev:cn": "tsx watch main.ts --dir='/Users/ming/dict-workspace/中文词典' --port=3002"
   },
   "dependencies": {
-    "@hono/node-server": "^1.14.1",
-    "commander": "^13.1.0",
-    "hono": "^4.7.8",
+    "@hono/node-server": "^1.19.7",
+    "commander": "^14.0.2",
+    "hono": "^4.11.1",
     "js-mdict": "^6.0.8"
   },
   "devDependencies": {
-    "@types/node": "^22.15.3",
-    "tsx": "^4.19.4"
+    "@types/node": "^25.0.3",
+    "tsx": "^4.21.0"
   }
 }
