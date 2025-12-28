@@ -85,16 +85,12 @@ export class MdxServer {
 
     // 2.1 hasn't ext (means to lookup in mdx)
     if (!ext) {
-      const wordArr: string[] = [key];
-      if (/^[A-Z]+$/.test(key)) {
-        // camel case
-        wordArr.push(key.slice(0) + key.slice(1).toLowerCase());
-        // lower case
-        wordArr.push(key.toLowerCase());
-      } else if (/[A-Z]/.test(key)) {
-        // lower case
-        wordArr.push(key.toLowerCase());
-      }
+      const lowerCase = key.toLowerCase();
+      const camelCase = lowerCase.slice(0, 1).toUpperCase() + lowerCase.slice(1);
+      const upperCase = key.toUpperCase();
+      
+      // 构建3种大小写查询
+      const wordArr = [lowerCase, camelCase, upperCase];
       for (let i = 0; i < wordArr.length; i++) {
         const word = wordArr[i];
         const result = loop2AvoidLink(mdx, word);
