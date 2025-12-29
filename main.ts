@@ -128,8 +128,13 @@ Options（参数说明）:
     }
   }
 
-  console.log("MDX FILE INFO:");
-  mdxServers.map((it) => console.log(it.scanResult));
+  console.log("MDX  INFO:");
+  mdxServers.forEach((it) => {
+    console.log({
+      ...it.scanResult,
+      iframeUrl: `http://127.0.0.1:${it.info.port}/welcome`,
+    });
+  });
 
   // main server
   const mainApp = new Hono();
@@ -141,7 +146,7 @@ Options（参数说明）:
 
   const mainServer = serve({ port, fetch: mainApp.fetch }, (info) => {
     console.info("Server is running.");
-    console.info(`Please open: %chttp://127.0.0.1:${info.port}/`, "color:green;");
+    console.info(`Please open: %chttp://127.0.0.1:${info.port}/welcome`, "color:green;");
   });
 
   // 捕获终止信号，关闭所有服务器
