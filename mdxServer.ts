@@ -20,7 +20,10 @@ export class MdxServer {
   // 如需特殊定制功能，可在mdx词典目录，新建一个html文件，以实现注入独特定的需求
   injectionHtml?: string;
 
-  constructor(public scanResult: IScanResult, public serverInfo: IServerInfo) {
+  constructor(
+    public scanResult: IScanResult,
+    public serverInfo: IServerInfo,
+  ) {
     const { mdxDir, filesInfo } = scanResult;
     this.mdictInfo = {
       mdx: new MDX(join(mdxDir, filesInfo.mdx)),
@@ -88,12 +91,12 @@ export class MdxServer {
       const lowerCase = key.toLowerCase();
       const camelCase = lowerCase.slice(0, 1).toUpperCase() + lowerCase.slice(1);
       const upperCase = key.toUpperCase();
-      
+
       // 构建3种大小写查询
       const wordArr = [lowerCase, camelCase, upperCase];
       for (let i = 0; i < wordArr.length; i++) {
         const word = wordArr[i];
-        const result = loop2AvoidLink(mdx, word);
+        const result = findMainEntry(mdx, word);
         if (result?.definition) {
           const html = assemblyHtml(this.info.title, result.definition, this.injectionHtml);
           return c.html(html, 200);
@@ -120,7 +123,35 @@ export class MdxServer {
   }
 }
 
-// loop to avoid "@@@LINK"
+/**
+ * 利用7.0.0 新增的lookupAll来查找
+ * @since js-mdict@7.0.0
+ * @link https://github.com/terasum/js-mdict?tab=readme-ov-file#lookupall---handle-duplicate-keys-new-in-v608
+ */
+function findMainEntry(mdx: MDX, key: string) {
+  const all = mdx.lookupAll(key);
+
+  // log for test
+  // const defArr = all.map(({ keyText, definition }) => {
+  //   if (!definition) return `${keyText}:\t"no def"`;
+  //   // @@@LINK
+  //   const matchArr = definition.match(/@@@LINK=(\S+)/);
+  //   if (matchArr?.at(1)) return `${keyText}:\t@@@LINK=${matchArr[1]}`;
+  //   // real definition
+  //   return `${keyText}:\t${definition.slice(0, 20)}`;
+  // });
+  // console.log(defArr.join("\n"));
+
+  const mainEntry = all.find(
+    ({ definition }) => !definition?.startsWith("[IMAGE") && !definition?.startsWith("@@@LINK"),
+  );
+  return mainEntry;
+}
+
+/**
+ * @deprecated since js-mdict@7.0.0
+ * loop to avoid "@@@LINK"
+ */
 function loop2AvoidLink(mdx: MDX, key: string) {
   let result = mdx.lookup(key);
 
