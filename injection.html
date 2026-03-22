@@ -100,10 +100,35 @@
       parentWin.postMessage({ jump }, { targetOrigin: "*" });
     });
 
+    // 处理所有可能包含图片数据的 span
+    // ex: <span id="ldoce490jpg" style="display:none" src="data:image/jpeg;base64"></span>
+    function fixSpanToImg() {
+      const spans = document.querySelectorAll('span[src^="data:image"]');
+      for (const span of spans) {
+        const srcAttr = span.getAttribute('src');
+        const img = document.createElement('img');
+        img.src = srcAttr;
+
+        // 复制其他属性（如 class、style 等）
+        img.className = span.className;
+        img.id = span.id;
+        img.style.maxWidth = "100vw";
+
+        // 保留原有的显示样式
+        const display = window.getComputedStyle(span).display;
+        if (display !== 'none') {
+          img.style.display = display;
+        }
+
+        span.parentNode.replaceChild(img, span);
+      }
+    }
+
     // TODO: 等待词典其他的js文件执行结束? 是否存在优化空间
     setTimeout(() => {
       fixSound();
       fixEntry();
+      fixSpanToImg();
     }, 500);
   });
 </script>

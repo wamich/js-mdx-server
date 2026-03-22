@@ -96,11 +96,12 @@ export class MdxServer {
       const wordArr = [lowerCase, camelCase, upperCase];
       for (let i = 0; i < wordArr.length; i++) {
         const word = wordArr[i];
-        const result = findMainEntry(mdx, word);
-        if (result?.definition) {
-          const html = assemblyHtml(this.info.title, result.definition, this.injectionHtml);
-          return c.html(html, 200);
-        }
+        const entries = lookupAllEntries(mdx, word);
+        if (!entries.length) continue;
+
+        const definition = entries.map((it) => it.definition).join("");
+        const html = assemblyHtml(this.info.title, definition, this.injectionHtml);
+        return c.html(html, 200);
       }
     }
     // 2.2 has ext (means a resource in mddArr)
@@ -128,24 +129,32 @@ export class MdxServer {
  * @since js-mdict@7.0.0
  * @link https://github.com/terasum/js-mdict?tab=readme-ov-file#lookupall---handle-duplicate-keys-new-in-v608
  */
-function findMainEntry(mdx: MDX, key: string) {
+function lookupAllEntries(mdx: MDX, key: string) {
+  const result: {
+    keyText: string;
+    definition: string | null;
+  }[] = [];
   const all = mdx.lookupAll(key);
+  for (const { keyText, definition } of all) {
+    if (!definition) continue;
 
-  // log for test
-  // const defArr = all.map(({ keyText, definition }) => {
-  //   if (!definition) return `${keyText}:\t"no def"`;
-  //   // @@@LINK
-  //   const matchArr = definition.match(/@@@LINK=(\S+)/);
-  //   if (matchArr?.at(1)) return `${keyText}:\t@@@LINK=${matchArr[1]}`;
-  //   // real definition
-  //   return `${keyText}:\t${definition.slice(0, 20)}`;
-  // });
-  // console.log(defArr.join("\n"));
+    // @@@LINK
+    const matchArr = definition.match(/@@@LINK=(\S+)/);
+    if (matchArr?.at(1)) {
+      const link = matchArr[1];
+      const linkDefinition = /* html */ `<div>
+        <b>@LINK</b>
+        <a style="all: revert;" href="entry://${link}">${link}</a>
+      </div>`;
+      result.push({ keyText, definition: linkDefinition });
+      continue;
+    }
 
-  const mainEntry = all.find(
-    ({ definition }) => !definition?.startsWith("[IMAGE") && !definition?.startsWith("@@@LINK"),
-  );
-  return mainEntry;
+    // real definition
+    result.unshift({ keyText, definition });
+  }
+
+  return result;
 }
 
 /**
