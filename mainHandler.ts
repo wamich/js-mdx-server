@@ -3,7 +3,7 @@ import { getMimeType } from "hono/utils/mime";
 import { createReadStream, readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
-import { createStreamBody, FallbackMimeType } from "./util.ts";
+import { createStreamBody, FallbackMimeType } from "./util";
 
 const root = join(__dirname, "client", "dist");
 

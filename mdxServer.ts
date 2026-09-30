@@ -7,7 +7,7 @@ import { createReadStream, readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { AddressInfo } from "node:net";
 import { basename, extname, join } from "node:path";
-import { createStreamBody, FallbackMimeType, IScanResult, MdictFilesInfo } from "./util.ts";
+import { createStreamBody, FallbackMimeType, IScanResult, MdictFilesInfo } from "./util";
 
 type IServerInfo = {
   server: ServerType;
@@ -88,14 +88,20 @@ export class MdxServer {
 
     // 2.1 hasn't ext (means to lookup in mdx)
     if (!ext) {
-      const lowerCase = key.toLowerCase();
+      const word = key;
+      const lowerCase = word.toLowerCase();
       const camelCase = lowerCase.slice(0, 1).toUpperCase() + lowerCase.slice(1);
-      const upperCase = key.toUpperCase();
+      const upperCase = word.toUpperCase();
 
       // 构建3种大小写查询
       const wordArr = [lowerCase, camelCase, upperCase];
-      for (let i = 0; i < wordArr.length; i++) {
-        const word = wordArr[i];
+      // 原始word优先
+      const idx = wordArr.indexOf(word);
+      if (idx > 0) {
+        wordArr.splice(idx, 1);
+        wordArr.unshift(word);
+      }
+      for (const word of wordArr) {
         const entries = lookupAllEntries(mdx, word);
         if (!entries.length) continue;
 
@@ -107,8 +113,8 @@ export class MdxServer {
     // 2.2 has ext (means a resource in mddArr)
     else if (mddArr.length) {
       const resourceKey = "\\" + key.replaceAll("/", "\\");
-      for (let i = 0; i < mddArr.length; i++) {
-        const { keyText, definition } = mddArr[i].locate(resourceKey);
+      for (const mdd of mddArr) {
+        const { keyText, definition } = mdd.locate(resourceKey);
         if (!definition) continue;
         if (keyText !== resourceKey) continue;
 

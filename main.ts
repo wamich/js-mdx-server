@@ -5,9 +5,9 @@ import { cors } from "hono/cors";
 import { etag } from "hono/etag";
 import process from "node:process";
 
-import { mainHandler } from "./mainHandler.ts";
-import { MdxServer } from "./mdxServer.ts";
-import { scanDir } from "./util.ts";
+import { mainHandler } from "./mainHandler";
+import { MdxServer } from "./mdxServer";
+import { scanDir } from "./util";
 
 async function main() {
   program
@@ -89,7 +89,7 @@ Options（参数说明）:
     }
 
     let currPort = subPortStart;
-    for (let i = 0; i < scanResults.length; i++) {
+    for (const scanResult of scanResults) {
       const app = new Hono();
       // for http 304 cache
       app.use("*", etag({ weak: true }));
@@ -110,20 +110,20 @@ Options（参数说明）:
         }
       }
 
-      const mdxServer = new MdxServer(scanResults[i], { server, app });
+      const mdxServer = new MdxServer(scanResult, { server, app });
       mdxServers.push(mdxServer);
     }
   }
   // 裸主机 运行: 子服务端口动态分配
   else {
-    for (let i = 0; i < scanResults.length; i++) {
+    for (const scanResult of scanResults) {
       const app = new Hono();
       // for http 304 cache
       app.use("*", etag({ weak: true }));
       app.get("/*", (c) => mdxServer.lookup(c));
 
       const server = serve({ port: 0, fetch: app.fetch });
-      const mdxServer = new MdxServer(scanResults[i], { server, app });
+      const mdxServer = new MdxServer(scanResult, { server, app });
       mdxServers.push(mdxServer);
     }
   }
