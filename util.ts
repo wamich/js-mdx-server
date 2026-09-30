@@ -56,6 +56,9 @@ export const scanDir = (_dir: string) => {
     if (fileInfo.mdx) results.push({ mdxDir, filesInfo: fileInfo });
   }
 
+  // 3. 排序，按mdxDir升序
+  results.sort((a, b) => a.mdxDir.localeCompare(b.mdxDir));
+
   return results;
 };
 
