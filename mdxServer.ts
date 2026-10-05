@@ -122,36 +122,47 @@ function lookupAllDefinitions(mdx: MDX, word: string) {
   const lowReg = new RegExp(`^${low}$`, "i");
   // 遍历，忽略大小写
   const matchedItems = mdx.keywordList.filter(({ keyText }) => keyText.toLowerCase() === low);
-  return matchedItems
-    .map((item) => {
-      const def = mdx.lookupRecordByKeyBlock(item);
-      if (!def) return;
 
-      let definition = mdx.meta.decoder.decode(def);
+  const definitions: string[] = [];
+  const lineSet = new Set<string>();
 
-      // @@@LINK
-      // const matchArr = definition.match(/@@@LINK=(\S+)/);
-      const matchArr = definition.match(/@@@LINK=([^\r\n]+)/); // fix: @@@LINK=USA, the\r\n\u0000
-      const link = matchArr?.at(1);
+  for (const item of matchedItems) {
+    const def = mdx.lookupRecordByKeyBlock(item);
+    if (!def) continue;
 
-      if (!link) return definition;
+    let definition = mdx.meta.decoder.decode(def);
 
-      // 如 link 和单词一致，没必要存在
-      if (lowReg.test(link)) return;
+    // @@@LINK
+    // const matchArr = definition.match(/@@@LINK=(\S+)/);
+    const matchArr = definition.match(/@@@LINK=([^\r\n]+)/); // fix: @@@LINK=USA, the\r\n\u0000
+    const link = matchArr?.at(1);
 
-      // link 重写 definition
-      definition = /* html */ `
+    if (!link) {
+      definitions.push(definition);
+      continue;
+    }
+
+    // 如 link 和单词一致，没必要存在
+    if (lowReg.test(link)) continue;
+
+    // link 去重。x-raying 有2个相同的 link: x-ray
+    if (lineSet.has(link)) continue;
+
+    lineSet.add(link);
+
+    // link 重写 definition
+    definition = /* html */ `
           <div>
-            <b>@LINK</b>
+            <b>@LINK</b>&nbsp;
             <a style="all: revert;" href="entry://${link}">${link}</a>
           </div>`
-        .split("\n")
-        .map((line) => line.trim())
-        .join("");
+      .split("\n")
+      .map((line) => line.trim())
+      .join("");
 
-      return definition;
-    })
-    .filter(Boolean) as string[];
+    definitions.push(definition);
+  }
+  return definitions;
 }
 
 // injection.html 公共的注入内容，每个词典都会注入
