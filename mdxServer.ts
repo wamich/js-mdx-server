@@ -88,34 +88,8 @@ export class MdxServer {
 
     // 2.1 hasn't ext (means to lookup in mdx)
     if (!ext) {
-      const word = key;
-      const lowerCase = word.toLowerCase();
-      const camelCase = lowerCase.slice(0, 1).toUpperCase() + lowerCase.slice(1);
-      const upperCase = word.toUpperCase();
-
-      // 构建3种大小写查询
-      const wordArr = [lowerCase, camelCase, upperCase];
-      // 原始word优先
-      const idx = wordArr.indexOf(word);
-      if (idx === -1) {
-        // 插入到第一项
-        wordArr.unshift(word);
-      } else if (idx === 0) {
-        // 已经在第一项
-      } else {
-        // 移动到第一项
-        wordArr.splice(idx, 1);
-        wordArr.unshift(word);
-      }
-      // 检索全部内容
-      const entries: ILookUpAllEntries = [];
-      for (const word of wordArr) {
-        const _entries = lookupAllEntries(mdx, word);
-        if (!_entries.length) continue;
-        entries.push(..._entries);
-      }
-      const definition = entries.map((it) => it.definition).join("");
-      const html = assemblyHtml(this.info.title, definition, this.injectionHtml);
+      const definitions = lookupAllDefinitions(mdx, key);
+      const html = assemblyHtml(this.info.title, definitions.join(""), this.injectionHtml);
       return c.html(html, 200);
     }
     // 2.2 has ext (means a resource in mddArr)
@@ -138,78 +112,46 @@ export class MdxServer {
   }
 }
 
-type ILookUpAllEntries = ReturnType<MDX["lookupAll"]>;
-
 /**
- * 利用7.0.0 新增的lookupAll来查找
+ * 参考 js-mdict@7.0.0 lookupAll 方法，改写查找 definition
  * @since js-mdict@7.0.0
  * @link https://github.com/terasum/js-mdict?tab=readme-ov-file#lookupall---handle-duplicate-keys-new-in-v608
  */
-function lookupAllEntries(mdx: MDX, key: string) {
-  const entries: ILookUpAllEntries = [];
-  const all = mdx.lookupAll(key);
-  for (const { keyText, definition } of all) {
-    if (!definition) continue;
+function lookupAllDefinitions(mdx: MDX, word: string) {
+  const low = word.toLowerCase();
+  const lowReg = new RegExp(`^${low}$`, "i");
+  // 遍历，忽略大小写
+  const matchedItems = mdx.keywordList.filter(({ keyText }) => keyText.toLowerCase() === low);
+  return matchedItems
+    .map((item) => {
+      const def = mdx.lookupRecordByKeyBlock(item);
+      if (!def) return;
 
-    // @@@LINK
-    // const matchArr = definition.match(/@@@LINK=(\S+)/);
-    const matchArr = definition.match(/@@@LINK=([^\r\n]+)/); // fix: @@@LINK=USA, the\r\n\u0000
-    if (matchArr?.at(1)) {
-      const link = matchArr[1];
-      const linkDefinition = /* html */ `<div>
-        <b>@LINK</b>
-        <a style="all: revert;" href="entry://${link}">${link}</a>
-      </div>`;
-      entries.push({ keyText, definition: linkDefinition });
-      continue;
-    }
+      let definition = mdx.meta.decoder.decode(def);
 
-    // real definition
-    entries.unshift({ keyText, definition });
-  }
+      // @@@LINK
+      // const matchArr = definition.match(/@@@LINK=(\S+)/);
+      const matchArr = definition.match(/@@@LINK=([^\r\n]+)/); // fix: @@@LINK=USA, the\r\n\u0000
+      const link = matchArr?.at(1);
 
-  return entries;
-}
+      if (!link) return definition;
 
-/**
- * @deprecated since js-mdict@7.0.0
- * loop to avoid "@@@LINK"
- */
-function loop2AvoidLink(mdx: MDX, key: string) {
-  let result = mdx.lookup(key);
+      // 如 link 和单词一致，没必要存在
+      if (lowReg.test(link)) return;
 
-  // 防止死循环
-  const searched = new Set<string>();
+      // link 重写 definition
+      definition = /* html */ `
+          <div>
+            <b>@LINK</b>
+            <a style="all: revert;" href="entry://${link}">${link}</a>
+          </div>`
+        .split("\n")
+        .map((line) => line.trim())
+        .join("");
 
-  while (true) {
-    searched.add(key);
-    if (!result.definition) return;
-
-    /**
-     * ex:
-     * key == abner
-     * result.definition == '@@@LINK=abner-doubleday\r\n\r\n'
-     * matchArr[1] == abner-doubleday
-     */
-    const matchArr = result.definition.match(/@@@LINK=(\S+)/);
-    if (!matchArr) break;
-    if (!matchArr[1]) break;
-
-    /**
-     * ex:
-     * key == way
-     * result.definition == '@@@LINK=way\r\n\r\n'
-     * matchArr[1] == way
-     */
-    if (matchArr[1] === key) return;
-
-    key = matchArr[1];
-
-    if (searched.has(key)) return;
-    result = mdx.lookup(key);
-  }
-
-  if (result.definition) return result;
+      return definition;
+    })
+    .filter(Boolean) as string[];
 }
 
 // injection.html 公共的注入内容，每个词典都会注入
