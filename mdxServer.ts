@@ -177,7 +177,7 @@ const injectionHtml = readFileSync(join(__dirname, "injection.html")).toString()
  */
 function assemblyHtml(title: string, definition: string, mdxInjectionHtml?: string) {
   return /* html */ `
-  ${definition}
+  ${definition || "404 Not Found"}
   ${injectionHtml || ""}
   ${mdxInjectionHtml || ""}
   <script>document.title = "${title}";</script>
