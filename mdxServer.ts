@@ -148,21 +148,32 @@ function lookupAllDefinitions(mdx: MDX, word: string) {
     // link 去重。x-raying 有2个相同的 link: x-ray
     if (lineSet.has(link)) continue;
 
+    // 加入 link
     lineSet.add(link);
-
-    // link 重写 definition
-    definition = /* html */ `
-          <div>
-            <b>@LINK</b>&nbsp;
-            <a style="all: revert;" href="entry://${link}">${link}</a>
-          </div>`
-      .split("\n")
-      .map((line) => line.trim())
-      .join("");
-
-    definitions.push(definition);
   }
+
+  if (!lineSet.size) return definitions;
+
+  // links 先排序，再转化，最后插入到 definitions 之后
+  const links = [...lineSet].sort().map(link2Definition);
+  definitions.push(...links);
   return definitions;
+}
+
+/**
+ * link 重写 definition
+ * @param link
+ * @returns definition
+ */
+function link2Definition(link: string) {
+  return /* html */ `
+      <div>
+        <b>@LINK</b>&nbsp;
+        <a style="all: revert;" href="entry://${link}">${link}</a>
+      </div>`
+    .split("\n")
+    .map((line) => line.trim())
+    .join("");
 }
 
 // injection.html 公共的注入内容，每个词典都会注入
